@@ -16,6 +16,31 @@ const AuthProvider = ({ children }) => {
     const [currentUser, setUser] = useState({});
     const [error, setError] = useState(null);
 
+    async function login({ email, password }) {
+        try {
+            const { data } = await httpAuth.post(
+                `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.REACT_APP_FIREBASE_KEY}`,
+                {
+                    email,
+                    password,
+                    returnSecureToken: true
+                }
+            );
+            setTokens(data);
+        } catch (error) {
+            errorCatcher(error);
+            const { code, message } = error.response.data.error;
+            if (code === 400) {
+                if (message === "INVALID_PASSWORD") {
+                    const errorObject = {
+                        email: "Email или пароль введены неправильно"
+                    };
+                    throw errorObject;
+                }
+            }
+        }
+    }
+
     async function signUp({ email, password, ...rest }) {
         const url = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${process.env.REACT_APP_FIREBASE_KEY}`;
 
@@ -61,7 +86,7 @@ const AuthProvider = ({ children }) => {
         }
     }, [error]);
     return (
-        <AuthContext.Provider value={{ signUp, currentUser }}>
+        <AuthContext.Provider value={{ signUp, login, currentUser }}>
             {children}
         </AuthContext.Provider>
     );
